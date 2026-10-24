@@ -1,0 +1,10 @@
+# Variáveis de ambiente
+.env
+.env.*
+
+# Sistema operacional
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
