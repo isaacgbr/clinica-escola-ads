@@ -1,0 +1,11 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// O banco existente sera mapeado posteriormente com prisma db pull.
+// Nao executar db push ou migrate para esta fundacao tecnica.
