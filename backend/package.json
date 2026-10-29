@@ -7,10 +7,12 @@
     "node": "^22.18.0 || ^24.11.0 || >=26.0.0"
   },
   "scripts": {
+    "test": "tsx --test tests/usuarios.test.ts",
+    "test:integration": "tsx --test tests/usuarios.integration.test.ts",
     "dev": "tsx watch src/server.ts",
     "build": "prisma generate && tsc -p tsconfig.json",
     "start": "node dist/src/server.js",
-    "typecheck": "prisma generate && tsc --noEmit",
+    "typecheck": "prisma generate && tsc -p tsconfig.test.json",
     "prisma:generate": "prisma generate",
     "prisma:validate": "prisma validate",
     "prisma:introspect": "prisma db pull"
