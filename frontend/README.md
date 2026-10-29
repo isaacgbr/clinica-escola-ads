@@ -9,16 +9,6 @@ Projeto estático feito com HTML, CSS e JavaScript puro.
 - `css/styles.css`: estilos responsivos e identidade visual azul, branco e amarelo.
 - `js/app.js`: menu mobile, mostrar/ocultar senha e validação dos formulários.
 
-## Como executar no VS Code
-1. Extraia o ZIP para uma pasta no computador.
-2. Abra o VS Code e vá em **Arquivo > Abrir Pasta**.
-3. Selecione a pasta `clinica-escola-uninassau`.
-4. Instale a extensão **Live Server** (Ritwick Dey), se ainda não tiver.
-5. Clique com o botão direito em `index.html` e selecione **Open with Live Server**.
-6. Teste os links **Entrar** e **Criar conta** no menu.
-
-Também é possível abrir `index.html` diretamente no navegador, mas o Live Server facilita o desenvolvimento.
-
 ## Importante: protótipo, não autenticação real
 - O cadastro salva nome, e-mail, telefone e nascimento no `localStorage` deste navegador apenas para demonstrar o fluxo.
 - A senha não é armazenada e, por isso, o login de demonstração verifica somente se o e-mail foi cadastrado e se uma senha foi preenchida. Não é autenticação segura.
