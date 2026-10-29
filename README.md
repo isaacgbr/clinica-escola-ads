@@ -94,9 +94,9 @@ Projeto desenvolvido em equipe por alunos do curso de Análise e Desenvolvimento
 
 | Nome | GitHub | Responsabilidade |
 |---|---|---|
-| Ian e João Henrique | [@IanLucas01]([https://github.com/usuario](https://github.com/IanLucas01)) / [@joaohenriiqueee]([[https://github.com/usuario](https://github.com/IanLucas01)](https://github.com/joaohenriiqueee)) | Frontend |
-| Leonardo Allan, Josiel e Jhonatas | [@usuario](https://github.com/usuario) | Banco de dados |
-| Nome 3 | [@Josielz](https://github.com/Josielz) /  | Backend |
+| Ian e João Henrique | [@IanLucas01](https://github.com/IanLucas01 ) / [@joaohenriiqueee](https://github.com/joaohenriiqueee) | Frontend |
+| Leonardo Allan, Josiel e Jhonatas | [@Josielz](https://github.com/Josielz) / [@plandim](https://github.com/plandim) | Banco de dados |
+| Isaac e Aaron | [@isaacgbr](https://github.com/isaacgbr)    | Backend |
 
 ## 📄 Licença
 
