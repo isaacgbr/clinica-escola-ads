@@ -7,5 +7,28 @@ datasource db {
   provider = "postgresql"
 }
 
-// O banco existente sera mapeado posteriormente com prisma db pull.
-// Nao executar db push ou migrate para esta fundacao tecnica.
+model recuperacao_senha {
+  id         BigInt    @id @default(autoincrement())
+  usuario_id BigInt
+  token_hash String    @unique @db.VarChar(255)
+  expira_em  DateTime  @db.Timestamptz(6)
+  usado_em   DateTime? @db.Timestamptz(6)
+  criado_em  DateTime  @default(now()) @db.Timestamptz(6)
+  usuarios   usuarios  @relation(fields: [usuario_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([usuario_id], map: "idx_recuperacao_senha_usuario")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains an expression index which requires additional setup for migrations. Visit https://pris.ly/d/expression-indexes for more info.
+model usuarios {
+  id                BigInt              @id @default(autoincrement())
+  nome_completo     String              @db.VarChar(150)
+  email             String              @db.VarChar(150)
+  senha_hash        String              @db.VarChar(255)
+  data_nascimento   DateTime            @db.Date
+  telefone          String              @db.VarChar(11)
+  criado_em         DateTime            @default(now()) @db.Timestamptz(6)
+  atualizado_em     DateTime            @default(now()) @db.Timestamptz(6)
+  recuperacao_senha recuperacao_senha[]
+}
