@@ -4,8 +4,6 @@ Projeto estático feito com HTML, CSS e JavaScript puro.
 
 ## Arquivos
 - `index.html`: hub/página inicial.
-- `login.html`: tela de login demonstrativa.
-- `cadastro.html`: tela de cadastro demonstrativa.
 - `css/styles.css`: estilos responsivos e identidade visual azul, branco e amarelo.
 - `js/app.js`: menu mobile, mostrar/ocultar senha e validação dos formulários.
 
