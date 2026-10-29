@@ -16,7 +16,6 @@ A Clínica Escola aproxima a formação acadêmica da prática profissional, com
 - telas de **login** e **cadastro** de usuários;
 - um banco de dados relacional para armazenar usuários e a recuperação de senha.
 
-> ⚠️ Os textos de serviços, endereço, telefone e e-mail são **placeholders**. Substituir pelos dados oficiais confirmados pela instituição antes da entrega.
 
 ## 📁 Estrutura do projeto
 
