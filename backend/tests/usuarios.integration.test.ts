@@ -6,9 +6,11 @@ import { app } from '../src/app.js';
 import { getPrisma } from '../src/repositories/prisma.js';
 import { inserirUsuario } from '../src/repositories/usuarios.repository.js';
 import { ApiError } from '../src/middlewares/error.middleware.js';
+import { exigirBancoTeste, falhaIntegracao } from './integracao-segura.js';
 
 // Este teste grava somente registros identificados por UUID e os remove ao final.
 test('cadastro HTTP, persistência, hash, duplicidade e concorrência no PostgreSQL', async () => {
+  exigirBancoTeste();
   const prisma = getPrisma();
   const prefix = `teste-${randomUUID()}`;
   const emails = [`${prefix}@example.com`, `${prefix}-race@example.com`, `${prefix}-legacy@example.com`];
@@ -53,11 +55,13 @@ test('cadastro HTTP, persistência, hash, duplicidade e concorrência no Postgre
     await prisma.usuarios.create({ data: { nome_completo: 'Teste legado', email: emails[2].toUpperCase(),
       senha_hash: stored.senha_hash, data_nascimento: stored.data_nascimento, telefone: stored.telefone } });
     assert.equal((await post(emails[2])).status, 409);
-  } catch {
-    throw new Error('Falha na integração de cadastro; detalhes internos e dados sensíveis foram omitidos.');
+  } catch (error) {
+    throw falhaIntegracao('cadastro', error);
   } finally {
     try {
       await prisma.usuarios.deleteMany({ where: { email: { in: emails.flatMap(email => [email, email.toUpperCase()]) } } });
+    } catch (error) {
+      throw falhaIntegracao('limpeza', error);
     } finally {
       await prisma.$disconnect();
       await new Promise<void>((resolve, reject) => server.close(error => error ? reject(error) : resolve()));

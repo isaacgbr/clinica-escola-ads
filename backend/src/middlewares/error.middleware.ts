@@ -1,8 +1,9 @@
 import type { ErrorRequestHandler } from 'express';
+import { diagnosticoErro } from '../utils/diagnostico-erro.js';
 
 export class ApiError extends Error {
   constructor(
-    public readonly status: 400 | 409,
+    public readonly status: 400 | 401 | 403 | 409 | 429,
     public readonly codigo: string,
     message: string,
     public readonly campos?: Record<string, string>,
@@ -13,7 +14,9 @@ export class ApiError extends Error {
 
 export const errorMiddleware: ErrorRequestHandler = (error: unknown, _req, res, next) => {
   if (res.headersSent) {
-    next(error);
+    const diagnostico = diagnosticoErro(error);
+    console.error('[backend] Erro apos inicio da resposta', diagnostico);
+    next(new Error(`Falha apos inicio da resposta: ${diagnostico.tipo}/${diagnostico.codigo}.`));
     return;
   }
 
@@ -30,5 +33,6 @@ export const errorMiddleware: ErrorRequestHandler = (error: unknown, _req, res, 
     return;
   }
 
+  console.error('[backend] Erro inesperado', diagnosticoErro(error));
   res.status(500).json({ erro: { codigo: 'ERRO_INTERNO', mensagem: 'Não foi possível concluir a operação.' } });
 };

@@ -1,5 +1,8 @@
 import 'dotenv/config';
 import { app } from './app.js';
+import { configAuth } from './config/auth.js';
+
+configAuth();
 
 const port = Number(process.env.PORT || 3000);
 

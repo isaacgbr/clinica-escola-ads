@@ -1,4 +1,4 @@
-import { randomBytes, scrypt } from 'node:crypto';
+import { gerarHashSenha } from '../utils/senha.js';
 import { ApiError } from '../middlewares/error.middleware.js';
 import { buscarUsuarioPorEmail, inserirUsuario } from '../repositories/usuarios.repository.js';
 
@@ -40,6 +40,7 @@ export function validarCadastro(body: unknown) {
     erros.confirmar_senha = 'A confirmação deve ser igual à senha.';
   }
 
+  // DATE e tratado em UTC para preservar o dia; o limite de futuro segue o calendario de Sao Paulo.
   const data = new Date(`${nascimento}T00:00:00.000Z`);
   const partesHoje = new Intl.DateTimeFormat('en-US', {
     timeZone: 'America/Sao_Paulo', year: 'numeric', month: '2-digit', day: '2-digit',
@@ -59,17 +60,6 @@ export function validarCadastro(body: unknown) {
   return { nome, email, senha, data, telefone };
 }
 
-async function gerarHash(senha: string): Promise<string> {
-  const salt = randomBytes(16).toString('hex');
-  const hash = await new Promise<Buffer>((resolve, reject) => {
-    scrypt(senha, salt, 64, { N: 32768, r: 8, p: 3, maxmem: 64 * 1024 * 1024 }, (error, key) => {
-      if (error) reject(error);
-      else resolve(key);
-    });
-  });
-  return `scrypt$32768$8$3$${salt}$${hash.toString('hex')}`;
-}
-
 export async function criarUsuario(body: unknown) {
   const dados = validarCadastro(body);
   if (await buscarUsuarioPorEmail(dados.email)) {
@@ -78,7 +68,7 @@ export async function criarUsuario(body: unknown) {
   const usuario = await inserirUsuario({
     nome_completo: dados.nome,
     email: dados.email,
-    senha_hash: await gerarHash(dados.senha),
+    senha_hash: await gerarHashSenha(dados.senha),
     data_nascimento: dados.data,
     telefone: dados.telefone,
   });

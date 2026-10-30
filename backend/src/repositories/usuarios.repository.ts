@@ -2,11 +2,20 @@ import { Prisma } from '../generated/prisma/client.js';
 import { ApiError } from '../middlewares/error.middleware.js';
 import { getPrisma } from './prisma.js';
 
-export function buscarUsuarioPorEmail(email: string) {
-  return getPrisma().usuarios.findFirst({
-    where: { email: { equals: email, mode: 'insensitive' } },
-    select: { id: true },
-  });
+export async function buscarCredenciaisPorEmail(email: string) {
+  // Igualdade literal usa o indice LOWER(email), sem interpretar % e _ como curingas.
+  const usuarios = await getPrisma().$queryRaw<Array<{ id: bigint; nome_completo: string; senha_hash: string }>>`
+    SELECT id, nome_completo, senha_hash FROM public.usuarios WHERE LOWER(email) = ${email} LIMIT 1
+  `;
+  return usuarios[0] ?? null;
+}
+
+export async function buscarUsuarioPorEmail(email: string) {
+  // Igualdade literal preserva % e _ e utiliza o indice unico em LOWER(email).
+  const usuarios = await getPrisma().$queryRaw<Array<{ id: bigint }>>`
+    SELECT id FROM public.usuarios WHERE LOWER(email) = LOWER(${email}) LIMIT 1
+  `;
+  return usuarios[0] ?? null;
 }
 
 export async function inserirUsuario(dados: {
