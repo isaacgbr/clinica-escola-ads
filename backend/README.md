@@ -3,6 +3,8 @@
 API desenvolvida por Isaac e Aaron, com health check, cadastro e autenticação
 por sessões persistentes no PostgreSQL.
 
+[Guia de Desenvolvimento do Backend](docs/GUIA_DESENVOLVIMENTO.md)
+
 ## Tecnologias
 
 - **Node.js:** ambiente de execução da API.
