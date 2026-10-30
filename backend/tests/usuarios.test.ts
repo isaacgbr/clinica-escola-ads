@@ -8,6 +8,7 @@ import { getPrisma } from '../src/repositories/prisma.js';
 import { Prisma } from '../src/generated/prisma/client.js';
 import { exigirBancoTeste, falhaIntegracao } from './integracao-segura.js';
 import { diagnosticoErro } from '../src/utils/diagnostico-erro.js';
+import { validarLogin } from '../src/services/auth.service.js';
 
 test('integracao exige ambiente explicito e banco local exclusivo de teste antes de escrever', () => {
   const seguro = { NODE_ENV: 'test', ALLOW_DB_TESTS: '1', DATABASE_URL: 'postgresql://localhost/clinica_escola_test' };
@@ -98,6 +99,66 @@ const valido = {
   nome: ' Maria Silva ', email: ' Maria@Example.com ', senha: 'Teste-local-123!',
   confirmar_senha: 'Teste-local-123!', nascimento: '2000-02-29', telefone: '(81) 99999-9999',
 };
+
+test('caracteriza mensagens, campos e precedencia dos erros do cadastro', () => {
+  const camposEsperados = {
+    nome: 'Informe um nome com até 150 caracteres, sem o caractere NUL.',
+    email: 'Informe um email válido com até 150 caracteres.',
+    senha: 'A senha deve ter entre 8 e 128 caracteres.',
+    confirmar_senha: 'A confirmação deve ser igual à senha.',
+    nascimento: 'Informe uma data válida, não futura, no formato YYYY-MM-DD.',
+    telefone: 'Informe um telefone com DDD de 10 ou 11 dígitos.',
+  };
+  const conferir = (entrada: unknown, mensagem: string, campos?: Record<string, string>) => {
+    assert.throws(() => validarCadastro(entrada), (error: unknown) => {
+      assert.ok(error instanceof ApiError);
+      assert.equal(error.status, 400);
+      assert.equal(error.codigo, 'DADOS_INVALIDOS');
+      assert.equal(error.message, mensagem);
+      assert.deepEqual(error.campos, campos);
+      return true;
+    });
+  };
+  for (const entrada of [null, undefined, [], 'texto', 42, false]) {
+    conferir(entrada, 'Envie um objeto JSON com os dados do cadastro.');
+  }
+  conferir({ id: '1' }, 'O cadastro contém campos não permitidos.');
+  conferir({}, 'Confira os campos informados.', camposEsperados);
+  for (const campo of Object.keys(camposEsperados)) {
+    conferir({ ...valido, [campo]: null }, 'Confira os campos informados.', {
+      [campo]: camposEsperados[campo as keyof typeof camposEsperados],
+      ...(campo === 'senha' && { confirmar_senha: camposEsperados.confirmar_senha }),
+    });
+  }
+});
+
+test('caracteriza limites Unicode, normalizacao e entradas especiais aceitas pelo cadastro', () => {
+  const emailLimite = `${'a'.repeat(138)}@example.com`;
+  assert.equal(emailLimite.length, 150);
+  for (const email of [emailLimite, 'a_b@example.com', 'a%b@example.com', "o'neil@example.com"]) {
+    assert.equal(validarCadastro({ ...valido, email }).email, email);
+  }
+  for (const senha of [' '.repeat(8), '😀'.repeat(128)]) {
+    assert.ok(validarCadastro({ ...valido, senha, confirmar_senha: senha }).senha === senha);
+  }
+  const dados = validarCadastro({ ...valido, nome: '😀'.repeat(150), nascimento: '0001-01-01', telefone: ' (81) 3333.4444 ' });
+  assert.equal(Array.from(dados.nome).length, 150);
+  assert.equal(dados.telefone, '8133334444');
+  assert.equal(dados.data.toISOString(), '0001-01-01T00:00:00.000Z');
+  assert.deepEqual(Object.keys(dados), ['nome', 'email', 'senha', 'data', 'telefone']);
+  for (const alteracao of [{ senha: '😀'.repeat(129), confirmar_senha: '😀'.repeat(129) },
+    { email: `a${emailLimite}` }, { nome: '😀'.repeat(151) }, { nascimento: ' 2000-02-29 ' },
+    { telefone: '81/99999/9999' }, { email: 'maria..silva@example.com' }]) {
+    assert.throws(() => validarCadastro({ ...valido, ...alteracao }), ApiError);
+  }
+});
+
+test('preserva a validacao mais restrita do email no cadastro em relacao ao login', () => {
+  for (const email of ['maria..silva@example.com', 'joão@example.com']) {
+    assert.throws(() => validarCadastro({ ...valido, email }), ApiError);
+    assert.doesNotThrow(() => validarLogin({ email, senha: valido.senha }));
+  }
+});
 
 test('normaliza dados e preserva data e senha', () => {
   const dados = validarCadastro(valido);
