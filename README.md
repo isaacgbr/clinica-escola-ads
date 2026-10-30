@@ -1,6 +1,6 @@
 # 🏥 Clínica Escola UNINASSAU
 
-Sistema web desenvolvido como projeto acadêmico para o gerenciamento de uma Clínica Escola, com área de acesso para usuários (cadastro, login e recuperação de senha).
+Sistema web desenvolvido como projeto acadêmico para o gerenciamento de uma Clínica Escola.
 
 ![Status](https://img.shields.io/badge/status-em%20desenvolvimento-yellow?style=for-the-badge)
 ![HTML](https://img.shields.io/badge/HTML-E34F26?style=for-the-badge&logo=html5&logoColor=white)
