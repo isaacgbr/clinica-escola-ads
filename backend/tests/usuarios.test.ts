@@ -9,6 +9,9 @@ import { Prisma } from '../src/generated/prisma/client.js';
 import { exigirBancoTeste, falhaIntegracao } from './integracao-segura.js';
 import { diagnosticoErro } from '../src/utils/diagnostico-erro.js';
 import { validarLogin } from '../src/services/auth.service.js';
+import { ipKeyGenerator } from 'express-rate-limit';
+import { criarLimiteCadastro, limiteCadastro } from '../src/middlewares/cadastro-limit.middleware.js';
+import { criarLimitesLogin } from '../src/middlewares/login-limit.middleware.js';
 
 test('integracao exige ambiente explicito e banco local exclusivo de teste antes de escrever', () => {
   const seguro = { NODE_ENV: 'test', ALLOW_DB_TESTS: '1', DATABASE_URL: 'postgresql://localhost/clinica_escola_test' };
@@ -224,6 +227,8 @@ for (const [agora, hoje, amanha] of [
 }
 
 test('contrato HTTP: health, JSON inválido, corpo excessivo, tipo e erro interno', async t => {
+  const limparLimite = () => limiteCadastro.resetKey(ipKeyGenerator('127.0.0.1'));
+  t.after(limparLimite);
   t.mock.timers.enable({ apis: ['Date'], now: new Date('2026-10-29T01:00:00.000Z') });
   const server = app.listen(0, '127.0.0.1');
   await new Promise<void>(resolve => server.once('listening', resolve));
@@ -233,6 +238,7 @@ test('contrato HTTP: health, JSON inválido, corpo excessivo, tipo e erro intern
   try {
     assert.equal((await fetch(`${base}/health`)).status, 200);
     for (const [campo, valor] of [['nome', 'Maria\u0000Silva'], ['nascimento', '2026-10-29']]) {
+      await limparLimite();
       const response = await fetch(`${base}/usuarios`, { method: 'POST',
         headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...valido, [campo]: valor }) });
       assert.equal(response.status, 400);
@@ -241,10 +247,12 @@ test('contrato HTTP: health, JSON inválido, corpo excessivo, tipo e erro intern
       assert.equal(typeof body.erro.campos[campo], 'string');
     }
     for (const body of ['{', 'null', '[]', '{}', JSON.stringify({ ...valido, id: '1' }), JSON.stringify({ nome: 'x'.repeat(17000) })]) {
+      await limparLimite();
       const response = await fetch(`${base}/usuarios`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body });
       assert.equal(response.status, 400);
       assert.equal((await response.json()).erro.codigo, 'DADOS_INVALIDOS');
     }
+    await limparLimite();
     const response = await fetch(`${base}/usuarios`, { method: 'POST', body: 'nome=Maria' });
     assert.equal(response.status, 400);
   } finally {
@@ -265,4 +273,76 @@ test('contrato HTTP: health, JSON inválido, corpo excessivo, tipo e erro intern
   } finally {
     await new Promise<void>((resolve, reject) => failingServer.close(error => error ? reject(error) : resolve()));
   }
+});
+
+test('POST /usuarios permite cinco tentativas e bloqueia a sexta sem afetar health', async t => {
+  const chave = ipKeyGenerator('127.0.0.1');
+  await limiteCadastro.resetKey(chave);
+  t.after(() => limiteCadastro.resetKey(chave));
+  const server = app.listen(0, '127.0.0.1');
+  await new Promise<void>(resolve => server.once('listening', resolve));
+  const address = server.address();
+  assert.ok(address && typeof address === 'object');
+  const base = `http://127.0.0.1:${address.port}`;
+  try {
+    for (let i = 0; i < 6; i++) {
+      const response = await fetch(base + '/usuarios', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+      assert.equal(response.status, i < 5 ? 400 : 429);
+      if (i === 5) {
+        assert.deepEqual(await response.json(), { erro: { codigo: 'MUITAS_TENTATIVAS', mensagem: 'Muitas tentativas. Aguarde antes de tentar novamente.' } });
+        assert.ok(Number(response.headers.get('retry-after')) > 0);
+      }
+    }
+    assert.equal((await fetch(base + '/health')).status, 200);
+  } finally { await new Promise<void>(resolve => server.close(() => resolve())); }
+});
+
+test('cadastro bloqueia apos cinco tentativas e libera uma nova cota ao expirar 15 minutos', async t => {
+  const inicio = new Date('2026-10-30T12:00:00Z').getTime();
+  t.mock.timers.enable({ apis: ['Date'], now: inicio });
+  const harness = express();
+  harness.post('/usuarios', criarLimiteCadastro(), (_req, res) => { res.sendStatus(201); });
+  harness.use(errorMiddleware);
+  const server = harness.listen(0, '127.0.0.1');
+  await new Promise<void>(resolve => server.once('listening', resolve));
+  const address = server.address();
+  assert.ok(address && typeof address === 'object');
+  const post = () => fetch(`http://127.0.0.1:${address.port}/usuarios`, { method: 'POST' });
+  try {
+    for (let i = 0; i < 5; i++) assert.equal((await post()).status, 201);
+    assert.equal((await post()).status, 429);
+    t.mock.timers.setTime(inicio + 15 * 60 * 1000 - 1);
+    assert.equal((await post()).status, 429);
+    t.mock.timers.setTime(inicio + 15 * 60 * 1000);
+    for (let i = 0; i < 5; i++) assert.equal((await post()).status, 201);
+    assert.equal((await post()).status, 429);
+  } finally { await new Promise<void>(resolve => server.close(() => resolve())); }
+});
+
+test('cadastro conta sucessos e falhas e nao compartilha contadores com Login', async () => {
+  const limitesLogin = criarLimitesLogin();
+  const harness = express();
+  let cadastrosProcessados = 0;
+  harness.use(express.json());
+  harness.post('/usuarios', criarLimiteCadastro(), (_req, res) => {
+    res.sendStatus([201, 400, 409, 500, 201][cadastrosProcessados++]);
+  });
+  harness.post('/auth/login', limitesLogin.porIp, limitesLogin.porEmailIp, (_req, res) => { res.sendStatus(401); });
+  harness.use(errorMiddleware);
+  const server = harness.listen(0, '127.0.0.1');
+  await new Promise<void>(resolve => server.once('listening', resolve));
+  const address = server.address();
+  assert.ok(address && typeof address === 'object');
+  const base = `http://127.0.0.1:${address.port}`;
+  const login = (email: string) => fetch(base + '/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email }) });
+  try {
+    for (let i = 0; i < 5; i++) assert.equal((await login('teste@example.com')).status, 401);
+    assert.equal((await login('teste@example.com')).status, 429);
+    for (const status of [201, 400, 409, 500, 201]) {
+      assert.equal((await fetch(base + '/usuarios', { method: 'POST' })).status, status);
+    }
+    assert.equal((await fetch(base + '/usuarios', { method: 'POST' })).status, 429);
+    assert.equal(cadastrosProcessados, 5);
+    assert.equal((await login('outro@example.com')).status, 401);
+  } finally { await new Promise<void>(resolve => server.close(() => resolve())); }
 });

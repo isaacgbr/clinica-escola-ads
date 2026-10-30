@@ -96,6 +96,14 @@ sem abstrações prematuras.
 
 Todos os campos são obrigatórios e devem ser strings. Campos adicionais são rejeitados.
 
+O endpoint permite 5 tentativas por IP em 15 minutos, contando sucessos e falhas
+que chegam à rota. A sexta retorna 429 com `Retry-After`. O contador fica em memória
+na instância local e é independente dos limitadores de Login.
+
+Esse limite é provisório: redes com IP compartilhado podem bloquear usuários
+distintos. Antes da produção, revisar o limite e a configuração de proxy
+(`trust proxy`) para identificar corretamente o IP do cliente.
+
 - Nome: remove espaços nas extremidades, exige conteúdo, limita a 150 caracteres e rejeita NUL (`\u0000`).
 - Email: remove espaços nas extremidades, converte para minúsculas, valida o formato e limita a 150 caracteres.
 - Senha: de 8 a 128 caracteres, até 512 bytes, sem remover espaços; confirmação idêntica.
@@ -113,6 +121,7 @@ quando há falhas de validação:
 | --- | --- | --- |
 | 400 | `DADOS_INVALIDOS` | Campos, tipo de conteúdo ou corpo JSON inválidos/excessivos. |
 | 409 | `EMAIL_JA_CADASTRADO` | Email já existente, inclusive com diferença de maiúsculas ou cadastro concorrente. |
+| 429 | `MUITAS_TENTATIVAS` | Limite de tentativas de cadastro por IP atingido. |
 | 500 | `ERRO_INTERNO` | Falha inesperada, sem detalhes internos na resposta. |
 
 ## Login e sessões
