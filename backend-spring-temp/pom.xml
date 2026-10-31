@@ -9,10 +9,10 @@
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
     <groupId>br.edu.uninassau</groupId>
-    <artifactId>backend-spring-temp</artifactId>
+    <artifactId>clinica-escola-backend</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    <name>backend-spring-temp</name>
-    <description>backend-spring-temp</description>
+    <name>Clínica Escola Backend</name>
+    <description>Base do backend Java da Clínica Escola para migração gradual da API.</description>
     <url/>
     <licenses>
         <license/>
