@@ -20,7 +20,7 @@ A Clínica Escola aproxima a formação acadêmica da prática profissional, com
 ## 📁 Estrutura do projeto
 
 ```
-├── backend/     # API e regras de negócio (a desenvolver)
+├── backend/     # API Java 21 / Spring Boot
 ├── frontend/    # Interface da aplicação
 │   ├── index.html       # Página inicial (portal)
 │   ├── login.html       # Tela de login
@@ -51,6 +51,15 @@ Validações no banco: telefone com 10 ou 11 dígitos numéricos e formato bási
 psql -U seu_usuario -d nome_do_banco -f database/001_criar_tabelas.sql
 ```
 
+## Backend oficial
+
+A API Java 21 / Spring Boot fica em [backend/](backend/README.md).
+Consulte o [guia de desenvolvimento](backend/docs/GUIA_DESENVOLVIMENTO.md)
+e os [contratos de Cadastro](backend/docs/CADASTRO_USUARIOS.md).
+Maven Wrapper, configuração PostgreSQL, segurança e testes ficam nessa pasta.
+A suíte completa mantém Node no PATH para conferir a compatibilidade scrypt.
+O esquema existente é preservado: sem criação automática de tabelas ou SQL na inicialização.
+
 ## ▶️ Como rodar o frontend
 
 O frontend é estático (HTML, CSS e JavaScript puro). Basta abrir o `index.html` no navegador ou usar uma extensão como o *Live Server* do VS Code.
@@ -70,9 +79,9 @@ O frontend é estático (HTML, CSS e JavaScript puro). Basta abrir o `index.html
 - [x] Modelagem inicial do banco de dados (usuários e recuperação de senha)
 - [ ] Tela de recuperação de senha (`recuperar-senha.html`)
 - [ ] Padronizar o frontend em uma única versão (hoje há duas organizações de arquivos)
-- [ ] Definir a tecnologia do backend e criar a API
-- [ ] Endpoint de cadastro, com senha criptografada (bcrypt ou argon2)
-- [ ] Endpoint de login com autenticação (sessão ou token)
+- [x] Backend Java 21 / Spring Boot na pasta backend/
+- [x] Endpoint de cadastro, com hash scrypt compatível com a API anterior
+- [x] Login com autenticação por sessões persistentes
 - [ ] Fluxo de recuperação de senha (token com expiração e envio por e-mail)
 - [ ] Integrar o frontend com a API e remover o `localStorage` de demonstração
 - [ ] Validar telefone e confirmação de senha no frontend, alinhados ao banco
@@ -83,9 +92,9 @@ O frontend é estático (HTML, CSS e JavaScript puro). Basta abrir o `index.html
 ## 🔜 Próximos passos
 
 1. Criar a tela de recuperação de senha, já que o link existe no login mas a página ainda não.
-2. Escolher a stack do backend e subir a primeira rota (cadastro de usuário).
+2. Validar a API Spring Boot com os testes documentados no Backend.
 3. Ligar o formulário de cadastro ao banco, guardando só o hash da senha.
-4. Implementar o login e proteger as páginas da área do usuário.
+4. Integrar o login e proteger as páginas da área do usuário.
 5. Evoluir para agendamentos e serviços, conforme o escopo definido pelo grupo.
 
 ## 👥 Equipe

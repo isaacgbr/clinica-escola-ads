@@ -2,30 +2,29 @@
 
 ## 1. Organização do Backend
 
-O Backend segue a arquitetura funcional em camadas:
+O Backend Java/Spring Boot segue a arquitetura em camadas:
 
 ```text
-Routes → Controllers → Services → Repositories → Prisma → PostgreSQL
+Controllers → Services → Repositories → Spring Data JPA → PostgreSQL
 ```
 
-- **Routes:** associam endpoints aos controllers e middlewares.
-- **Controllers:** recebem requisições e constroem respostas HTTP.
+- **Controllers:** definem os endpoints, recebem requisições e constroem respostas HTTP.
 - **Services:** validam os dados e aplicam regras de negócio.
-- **Repositories:** concentram consultas e persistência via Prisma.
-- **Prisma e PostgreSQL:** conectam os modelos à estrutura do banco existente.
+- **Repositories:** concentram consultas e persistência via Spring Data JPA.
+- **JPA e PostgreSQL:** mapeiam as entidades à estrutura do banco existente, sem geração automática de tabelas.
 
-Middlewares reúnem autenticação, CSRF, limitação de tentativas e erros.
-`config/` concentra configurações; `utils/`, funções compartilhadas.
-O cadastro em `usuarios` e a autenticação em `auth` servem como referências.
+Filtros Spring Security reúnem autenticação, CSRF e limitação de tentativas; o tratamento de exceções padroniza os erros.
+`config/` concentra configurações e filtros; `dto/`, contratos; `entity/`, entidades; `exception/`, erros.
+UsuarioController/UsuarioService e AuthController/AuthService servem como referências.
 
 ## 2. Padrões de Código
 
-- Preferir nomes descritivos, como `criarUsuario` e `usuarios.service.ts`.
+- Preferir nomes descritivos, como `cadastrar` e `UsuarioService`.
 - Manter funções com responsabilidades claras, separando regras de negócio,
   respostas HTTP e acesso ao banco.
 - Aplicar Clean Code, KISS e DRY com bom senso: favorecer clareza e simplicidade,
   compartilhando código quando houver repetição real.
-- Preservar o padrão funcional; classes e abstrações só ajudam quando resolvem
+- Aplicar POO e abstrações somente quando resolvem
   uma necessidade concreta.
 - Usar comentários curtos em PT-BR para decisões ou comportamentos não evidentes,
   como o tratamento de fuso horário. Evitar narrar cada linha do código.
