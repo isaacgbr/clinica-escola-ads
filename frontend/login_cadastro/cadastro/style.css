@@ -1,0 +1,309 @@
+
+/* =========================
+   CONFIGURAÇÕES GERAIS
+========================= */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+:root {
+    --azul: #073b73;
+    --azul-escuro: #092e59;
+    --azul-link: #0866d9;
+    --amarelo: #ffcc00;
+    --branco: #ffffff;
+    --texto: #153b68;
+    --texto-secundario: #7485a2;
+    --borda: #cbd5e3;
+}
+
+body {
+    min-height: 100vh;
+    font-family: Arial, Helvetica, sans-serif;
+    background: var(--branco);
+    color: var(--texto);
+}
+
+.pagina {
+    position: relative;
+    min-height: 100vh;
+    overflow: hidden;
+    padding: 40px 7%;
+}
+
+/* =========================
+   DETALHES AZUL E AMARELO
+========================= */
+
+.pagina::before {
+    content: "";
+    position: absolute;
+    top: -5%;
+    left: -95px;
+    width: 180px;
+    height: 115%;
+    background: var(--azul);
+    transform: rotate(8deg);
+    z-index: 0;
+}
+
+.pagina::after {
+    content: "";
+    position: absolute;
+    top: -5%;
+    left: 45px;
+    width: 18px;
+    height: 115%;
+    background: var(--amarelo);
+    transform: rotate(8deg);
+    z-index: 0;
+}
+
+/* =========================
+   CABEÇALHO E MARCA
+========================= */
+
+.cabecalho {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 70px;
+}
+
+.logo {
+    width: 68px;
+    height: 80px;
+    object-fit: contain;
+}
+
+.nome-marca {
+    font-size: 30px;
+    font-weight: 800;
+    color: var(--azul-escuro);
+    letter-spacing: 1px;
+}
+
+/* =========================
+   FORMULÁRIOS
+========================= */
+
+.formulario {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: 700px;
+    margin: 0 auto;
+}
+
+.formulario h1 {
+    color: var(--azul-escuro);
+    font-size: 48px;
+    font-weight: 750;
+    margin-bottom: 14px;
+}
+
+.subtitulo {
+    color: var(--texto-secundario);
+    font-size: 19px;
+    line-height: 1.6;
+    margin-bottom: 28px;
+}
+
+/* A tela de login possui mais espaço vertical. */
+
+.login {
+    margin-top: 100px;
+}
+
+/* =========================
+   CAMPOS DE ENTRADA
+========================= */
+
+.campo {
+    margin-bottom: 18px;
+}
+
+.campo label {
+    display: block;
+    margin-bottom: 8px;
+    color: var(--texto);
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.campo input {
+    width: 100%;
+    min-height: 58px;
+    padding: 16px 18px;
+    border: 1.5px solid var(--borda);
+    border-radius: 11px;
+    background: var(--branco);
+    color: var(--texto);
+    font-size: 16px;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.campo input::placeholder {
+    color: var(--texto-secundario);
+    opacity: 1;
+}
+
+.campo input:focus {
+    border-color: var(--azul-link);
+    box-shadow: 0 0 0 3px rgba(8, 102, 217, 0.12);
+}
+
+/* =========================
+   LINKS E MENSAGENS
+========================= */
+
+.texto-auxiliar {
+    color: var(--texto-secundario);
+    font-size: 15px;
+    line-height: 1.7;
+}
+
+.texto-auxiliar a {
+    color: var(--azul-link);
+    font-weight: 700;
+    text-decoration: none;
+    margin-left: 5px;
+}
+
+.texto-auxiliar a:hover {
+    text-decoration: underline;
+}
+
+.recuperar {
+    margin: 22px 0 28px;
+}
+
+.registro-link {
+    text-align: center;
+    margin-top: 26px;
+}
+
+/* =========================
+   BOTÕES
+========================= */
+
+.botao {
+    display: block;
+    width: 100%;
+    min-height: 60px;
+    border: none;
+    border-radius: 11px;
+    background: var(--azul);
+    color: var(--branco);
+    font-size: 20px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.2s;
+}
+
+.botao:hover {
+    background: var(--azul-escuro);
+}
+
+.botao:active {
+    transform: scale(0.99);
+}
+
+.botao:focus-visible {
+    outline: 3px solid var(--amarelo);
+    outline-offset: 3px;
+}
+
+/* =========================
+   TELA DE CADASTRO
+========================= */
+
+.cadastro {
+    max-width: 700px;
+    padding-bottom: 35px;
+}
+
+.cadastro .subtitulo {
+    max-width: 600px;
+}
+
+/* =========================
+   RESPONSIVIDADE
+========================= */
+
+@media (max-width: 768px) {
+    .pagina {
+        padding: 25px 7%;
+    }
+
+    .pagina::before {
+        left: -145px;
+        width: 190px;
+    }
+
+    .pagina::after {
+        left: 20px;
+        width: 12px;
+    }
+
+    .cabecalho {
+        gap: 8px;
+        margin-bottom: 45px;
+    }
+
+    .logo {
+        width: 48px;
+        height: 58px;
+    }
+
+    .nome-marca {
+        font-size: 21px;
+    }
+
+    .formulario h1 {
+        font-size: 34px;
+    }
+
+    .subtitulo {
+        font-size: 16px;
+    }
+
+    .login {
+        margin-top: 45px;
+    }
+
+    .campo input {
+        min-height: 54px;
+        font-size: 15px;
+    }
+
+    .botao {
+        min-height: 54px;
+        font-size: 18px;
+    }
+
+    .texto-auxiliar {
+        font-size: 13px;
+    }
+}
+
+@media (max-width: 380px) {
+    .nome-marca {
+        font-size: 18px;
+    }
+
+    .formulario h1 {
+        font-size: 30px;
+    }
+
+    .texto-auxiliar {
+        font-size: 12px;
+    }
+}
