@@ -21,6 +21,9 @@ public class Usuario {
     private LocalDate dataNascimento;
     @Column(nullable = false, length = 11)
     private String telefone;
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 7)
+    private Perfil perfil = Perfil.INTERNO;
     // Defaults e trigger pertencem ao PostgreSQL existente.
     @Column(name = "criado_em", insertable = false, updatable = false, nullable = false)
     private Instant criadoEm;
@@ -37,6 +40,14 @@ public class Usuario {
         this.telefone = telefone;
     }
 
+    // Usado somente pelo provisionamento explícito fora da API HTTP.
+    public static Usuario primeiroAdministrador(String nome, String email, String hash, LocalDate nascimento, String telefone) {
+        Usuario usuario = new Usuario(nome, email, hash, nascimento, telefone);
+        usuario.perfil = Perfil.ADMIN;
+        return usuario;
+    }
+
+    public Perfil getPerfil() { return perfil; }
     public Long getId() { return id; }
     public String getNomeCompleto() { return nomeCompleto; }
     public String email() { return email; }

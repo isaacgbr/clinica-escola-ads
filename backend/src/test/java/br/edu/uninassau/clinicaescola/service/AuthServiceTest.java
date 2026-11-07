@@ -43,6 +43,23 @@ class AuthServiceTest {
         assertEquals("  senha  ",AuthService.validar(Map.of("email"," a@example.com ","senha","  senha  ")).senha());
     }
 
+    @Test void perfilPersistidoEConsultadoACadaRequisicaoValida() {
+        var usuario = mock(Usuario.class);
+        when(usuario.getId()).thenReturn(7L);
+        when(usuario.getNomeCompleto()).thenReturn("Maria");
+        when(usuario.getPerfil()).thenReturn(br.edu.uninassau.clinicaescola.entity.Perfil.ADMIN,
+                br.edu.uninassau.clinicaescola.entity.Perfil.INTERNO);
+        var sessao = new br.edu.uninassau.clinicaescola.entity.Sessao(usuario, "resumo", clock.instant());
+        when(sessoes.renovar(any(), any(), any())).thenReturn(1);
+        when(sessoes.findByTokenHash(any())).thenReturn(Optional.of(sessao));
+        assertEquals(br.edu.uninassau.clinicaescola.entity.Perfil.ADMIN, service.autenticar("a".repeat(64)).perfil());
+        assertEquals(br.edu.uninassau.clinicaescola.entity.Perfil.INTERNO, service.autenticar("a".repeat(64)).perfil());
+    }
+    @Test void sessaoInvalidaNaoConsultaUsuarioNemPerfil() {
+        when(sessoes.renovar(any(), any(), any())).thenReturn(0);
+        assertThrows(AutenticacaoException.class, () -> service.autenticar("a".repeat(64)));
+        verify(sessoes, never()).findByTokenHash(any());
+    }
     @Test void preservaEspacosNodeNoEmail(){
         assertEquals("a@example.com",AuthService.normalizarEmail("\ufeff\u00a0a@example.com\u00a0"));
         assertThrows(CadastroInvalidoException.class,()->AuthService.validar(Map.of("email","a\u00a0b@example.com","senha","Teste-local-123!")));

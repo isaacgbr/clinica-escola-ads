@@ -1,4 +1,6 @@
 package br.edu.uninassau.clinicaescola.service;
+
+import br.edu.uninassau.clinicaescola.dto.UsuarioAutenticado;
 import br.edu.uninassau.clinicaescola.dto.UsuarioPublico;
 import br.edu.uninassau.clinicaescola.entity.Sessao;
 import br.edu.uninassau.clinicaescola.exception.*;
@@ -73,12 +75,13 @@ public class AuthService {
         return new LoginConcluido(token,new UsuarioPublico(usuario.getId().toString(),usuario.getNomeCompleto()));
     }
     // Mantém a renovação e a leitura da sessão na mesma transação.
-    @Transactional public UsuarioPublico autenticar(String token) {
+    @Transactional public UsuarioAutenticado autenticar(String token) {
         if(token!=null) {
             var agora=relogio.instant();
             if(sessoes.renovar(hash(token),agora,agora.minusSeconds(1800))==1) {
                 var usuario=sessoes.findByTokenHash(hash(token)).orElseThrow().getUsuario();
-                return new UsuarioPublico(usuario.getId().toString(),usuario.getNomeCompleto());
+                return new UsuarioAutenticado(
+                        new UsuarioPublico(usuario.getId().toString(),usuario.getNomeCompleto()), usuario.getPerfil());
             }
         }
         throw new AutenticacaoException("NAO_AUTENTICADO","Autenticação necessária.");

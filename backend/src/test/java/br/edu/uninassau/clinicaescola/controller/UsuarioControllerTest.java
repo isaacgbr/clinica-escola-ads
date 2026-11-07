@@ -35,13 +35,21 @@ class UsuarioControllerTest {
     private Instant agora;
     private static final String JSON = "{\"nome\":\"Maria\",\"email\":\"maria@example.com\",\"senha\":\"marcador-senha\","
             + "\"confirmar_senha\":\"marcador-senha\",\"nascimento\":\"2000-01-01\",\"telefone\":\"81999999999\"}";
+    // Simula uma sessão ADMIN válida; cada teste pode substituí-la para conferir a autorização.
+    private org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder cadastro() {
+        return post("/usuarios").cookie(new jakarta.servlet.http.Cookie("clinica_sessao_local", "a".repeat(64)))
+                .header("Origin", "http://localhost:8080").header("X-Requested-With", "XMLHttpRequest");
+    }
+
     @BeforeEach void preparar() {
+        when(authService.autenticar(any())).thenReturn(new br.edu.uninassau.clinicaescola.dto.UsuarioAutenticado(
+                new UsuarioPublico("1", "Administrador"), br.edu.uninassau.clinicaescola.entity.Perfil.ADMIN));
         agora = Instant.ofEpochSecond(INSTANTE.addAndGet(901));
         when(relogio.instant()).thenAnswer(call -> agora);
         when(service.cadastrar(any())).thenReturn(new UsuarioPublico("42", "Maria"));
     }
-    @Test void criaSemCsrfOuAutenticacaoComRespostaPublica(CapturedOutput logs) throws Exception {
-        var result = mvc.perform(post("/usuarios").contentType("application/json").content(JSON))
+    @Test void adminCriaComOrigemValidaERespostaPublica(CapturedOutput logs) throws Exception {
+        var result = mvc.perform(cadastro().contentType("application/json").content(JSON))
                 .andExpect(status().isCreated()).andExpect(content().contentTypeCompatibleWith("application/json"))
                 .andExpect(content().json("{\"usuario\":{\"id\":\"42\",\"nome\":\"Maria\"}}"))
                 .andExpect(jsonPath("$.usuario.*", hasSize(2)))
@@ -50,25 +58,25 @@ class UsuarioControllerTest {
         assertFalse(logs.getAll().contains("marcador-senha"));
     }
     @Test void preservaTiposJsonSemCoercao() throws Exception {
-        mvc.perform(post("/usuarios").contentType("application/json").content("{\"nome\":123}"))
+        mvc.perform(cadastro().contentType("application/json").content("{\"nome\":123}"))
                 .andExpect(status().isCreated());
         verify(service).cadastrar(argThat(value -> value instanceof Map<?, ?> dados && dados.get("nome") instanceof Number));
     }
     @Test void validaCamposERetornaErroPadronizado() throws Exception {
         when(service.cadastrar(any())).thenThrow(new CadastroInvalidoException("Confira os campos informados.",
                 Map.of("nome", "Informe um nome com até 150 caracteres, sem o caractere NUL.")));
-        mvc.perform(post("/usuarios").contentType("application/json").content("{}"))
+        mvc.perform(cadastro().contentType("application/json").content("{}"))
                 .andExpect(status().isBadRequest()).andExpect(jsonPath("$.erro.codigo").value("DADOS_INVALIDOS"))
                 .andExpect(jsonPath("$.erro.campos.nome").isString());
     }
     @Test void duplicadoRetorna409() throws Exception {
         when(service.cadastrar(any())).thenThrow(new EmailJaCadastradoException());
-        mvc.perform(post("/usuarios").contentType("application/json").content(JSON))
+        mvc.perform(cadastro().contentType("application/json").content(JSON))
                 .andExpect(status().isConflict()).andExpect(jsonPath("$.erro.codigo").value("EMAIL_JA_CADASTRADO"));
     }
     @Test void falhaInternaNaoExpoeMensagemOuHash(CapturedOutput logs) throws Exception {
         when(service.cadastrar(any())).thenThrow(new RuntimeException("marcador-senha marcador-hash jdbc:secreto"));
-        var result = mvc.perform(post("/usuarios").contentType("application/json").content(JSON))
+        var result = mvc.perform(cadastro().contentType("application/json").content(JSON))
                 .andExpect(status().isInternalServerError()).andExpect(jsonPath("$.erro.codigo").value("ERRO_INTERNO"))
                 .andReturn();
         String saida = logs.getAll() + result.getResponse().getContentAsString();
@@ -77,39 +85,81 @@ class UsuarioControllerTest {
         assertFalse(saida.contains("jdbc:secreto"));
     }
     @Test void rejeitaJsonMalformadoTipoErradoECorpoExcessivo() throws Exception {
-        mvc.perform(post("/usuarios").contentType("application/json").content("{"))
+        mvc.perform(cadastro().contentType("application/json").content("{"))
                 .andExpect(status().isBadRequest()).andExpect(jsonPath("$.erro.codigo").value("DADOS_INVALIDOS"));
-        mvc.perform(post("/usuarios").contentType("text/plain").content(JSON)).andExpect(status().isBadRequest());
-        mvc.perform(post("/usuarios").contentType("application/json").content("x".repeat(16385)))
+        mvc.perform(cadastro().contentType("text/plain").content(JSON)).andExpect(status().isBadRequest());
+        mvc.perform(cadastro().contentType("application/json").content("x".repeat(16385)))
                 .andExpect(status().isBadRequest());
         verifyNoInteractions(service);
     }
     @Test void limitaCincoTentativasIncluindoFalhasELiberaAposJanela() throws Exception {
         when(service.cadastrar(any())).thenThrow(new CadastroInvalidoException("Confira os campos informados."));
-        for (int i = 0; i < 5; i++) mvc.perform(post("/usuarios").contentType("application/json").content("{}"))
+        for (int i = 0; i < 5; i++) mvc.perform(cadastro().contentType("application/json").content("{}"))
                 .andExpect(status().isBadRequest());
-        mvc.perform(post("/usuarios").contentType("application/json").content("{}"))
+        mvc.perform(cadastro().contentType("application/json").content("{}"))
                 .andExpect(status().isTooManyRequests()).andExpect(header().string("Retry-After", "900"))
                 .andExpect(jsonPath("$.erro.codigo").value("MUITAS_TENTATIVAS"));
         agora = agora.plusSeconds(900);
-        mvc.perform(post("/usuarios").contentType("application/json").content("{}"))
+        mvc.perform(cadastro().contentType("application/json").content("{}"))
                 .andExpect(status().isBadRequest());
         verify(service, times(6)).cadastrar(any());
     }
     @Test void contaSucessosIgnoraCabecalhosDeProxyESeparaIps() throws Exception {
-        for (int i = 0; i < 5; i++) mvc.perform(post("/usuarios").contentType("application/json").content(JSON))
+        for (int i = 0; i < 5; i++) mvc.perform(cadastro().contentType("application/json").content(JSON))
                 .andExpect(status().isCreated());
-        mvc.perform(post("/usuarios").header("X-Forwarded-For", "203.0.113.2")
+        mvc.perform(cadastro().header("X-Forwarded-For", "203.0.113.2")
                 .contentType("application/json").content(JSON)).andExpect(status().isTooManyRequests());
-        mvc.perform(post("/usuarios").with(req -> { req.setRemoteAddr("203.0.113.3"); return req; })
+        mvc.perform(cadastro().with(req -> { req.setRemoteAddr("203.0.113.3"); return req; })
                 .contentType("application/json").content(JSON)).andExpect(status().isCreated());
     }
     @Test void agrupaIpv6Por56Bits() throws Exception {
-        for (int i = 0; i < 5; i++) mvc.perform(post("/usuarios").with(req -> {
+        for (int i = 0; i < 5; i++) mvc.perform(cadastro().with(req -> {
             req.setRemoteAddr("2001:db8:abcd:1200::1"); return req;
         }).contentType("application/json").content(JSON)).andExpect(status().isCreated());
-        mvc.perform(post("/usuarios").with(req -> { req.setRemoteAddr("2001:db8:abcd:12ff::2"); return req; })
+        mvc.perform(cadastro().with(req -> { req.setRemoteAddr("2001:db8:abcd:12ff::2"); return req; })
                 .contentType("application/json").content(JSON)).andExpect(status().isTooManyRequests());
+    }
+    @Test void anonimoNaoCadastraMesmoComOrigemValida() throws Exception {
+        mvc.perform(post("/usuarios").header("Origin", "http://localhost:8080")
+                .header("X-Requested-With", "XMLHttpRequest").contentType("application/json").content(JSON))
+                .andExpect(status().isUnauthorized()).andExpect(jsonPath("$.erro.codigo").value("NAO_AUTENTICADO"));
+        verifyNoInteractions(service);
+    }
+    @Test void internoNaoCadastraMesmoComSessaoValida() throws Exception {
+        when(authService.autenticar(any())).thenReturn(new br.edu.uninassau.clinicaescola.dto.UsuarioAutenticado(
+                new UsuarioPublico("2", "Interno"), br.edu.uninassau.clinicaescola.entity.Perfil.INTERNO));
+        mvc.perform(cadastro().contentType("application/json").content(JSON))
+                .andExpect(status().isForbidden()).andExpect(jsonPath("$.erro.codigo").value("ACESSO_NEGADO"));
+        mvc.perform(cadastro().with(req -> {req.setRequestURI("/usuarios/"); return req;})
+                .contentType("application/json").content(JSON)).andExpect(status().isForbidden());
+        verifyNoInteractions(service);
+    }
+    @Test void sessaoExpiradaOuRevogadaNaoCadastra() throws Exception {
+        when(authService.autenticar(any())).thenThrow(new AutenticacaoException("NAO_AUTENTICADO", "Autenticação necessária."));
+        mvc.perform(cadastro().contentType("application/json").content(JSON))
+                .andExpect(status().isUnauthorized()).andExpect(cookie().maxAge("clinica_sessao_local", 0));
+        verifyNoInteractions(service);
+    }
+    @Test void adminNaoDispensaProtecaoDeOrigemECsrf() throws Exception {
+        mvc.perform(cadastro().with(req -> { req.removeHeader("Origin"); req.addHeader("Origin", "https://outra.example"); return req; }).contentType("application/json").content(JSON))
+                .andExpect(status().isForbidden());
+        mvc.perform(post("/usuarios").cookie(new jakarta.servlet.http.Cookie("clinica_sessao_local", "a".repeat(64)))
+                .header("Origin", "http://localhost:8080").contentType("application/json").content(JSON))
+                .andExpect(status().isForbidden());
+        mvc.perform(cadastro().header("Sec-Fetch-Site", "cross-site").contentType("application/json").content(JSON))
+                .andExpect(status().isForbidden());
+        verifyNoInteractions(service);
+    }
+    @Test void mesmoCookieNaoMantemPermissaoDepoisDeMudarPerfil() throws Exception {
+        mvc.perform(cadastro().contentType("application/json").content(JSON)).andExpect(status().isCreated());
+        when(authService.autenticar(any())).thenReturn(new br.edu.uninassau.clinicaescola.dto.UsuarioAutenticado(
+                new UsuarioPublico("1", "Administrador"), br.edu.uninassau.clinicaescola.entity.Perfil.INTERNO));
+        mvc.perform(cadastro().contentType("application/json").content(JSON)).andExpect(status().isForbidden());
+        verify(service, times(1)).cadastrar(any());
+    }
+    @Test void adminCadastraTambemComBarraFinal() throws Exception {
+        mvc.perform(cadastro().with(req -> { req.setRequestURI("/usuarios/"); return req; })
+                .contentType("application/json").content(JSON)).andExpect(status().isCreated());
     }
     @Test void demaisRotasNaoSaoLiberadas() throws Exception {
         mvc.perform(get("/usuarios")).andExpect(status().isUnauthorized());

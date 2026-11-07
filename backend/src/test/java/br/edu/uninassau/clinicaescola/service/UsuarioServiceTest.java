@@ -33,6 +33,7 @@ class UsuarioServiceTest {
             Usuario usuario = call.getArgument(0);
             assertEquals("maria@example.com", usuario.email());
             assertEquals("hash-seguro", usuario.senhaHash());
+            assertEquals(br.edu.uninassau.clinicaescola.entity.Perfil.INTERNO, usuario.getPerfil());
             assertEquals(LocalDate.of(2000, 2, 29), usuario.dataNascimento());
             assertEquals("81999999999", usuario.telefone());
             assertFalse(usuario.toString().contains("hash-seguro"));
