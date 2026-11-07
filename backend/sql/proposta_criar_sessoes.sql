@@ -4,6 +4,14 @@
 
 BEGIN;
 
+CREATE TABLE IF NOT EXISTS public.usuarios (
+  id                   BIGSERIAL    PRIMARY KEY,
+  nome                 VARCHAR(255) NOT NULL,
+  email                VARCHAR(255) NOT NULL UNIQUE,
+  senha_hash           VARCHAR(255) NOT NULL,
+  criado_em            TIMESTAMPTZ  NOT NULL DEFAULT NOW()
+    );
+
 CREATE TABLE public.sessoes (
     id                   BIGSERIAL    PRIMARY KEY,
     usuario_id           BIGINT       NOT NULL,
@@ -30,4 +38,7 @@ CREATE TABLE public.sessoes (
 CREATE INDEX idx_sessoes_usuario ON public.sessoes (usuario_id);
 CREATE INDEX idx_sessoes_expiracao ON public.sessoes (expira_em);
 
+INSERT INTO public.usuarios (id, nome, email, senha_hash)
+    VALUES (1, 'Administrador', 'admin@clinicaescolaUninassau', 'scrypt$32768$8$3$')
+        ON CONFLICT (id) DO NOTHING;
 COMMIT;

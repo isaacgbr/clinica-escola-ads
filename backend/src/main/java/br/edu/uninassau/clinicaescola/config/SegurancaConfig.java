@@ -27,7 +27,7 @@ public class SegurancaConfig {
         RequestMatcher cadastro = request -> "POST".equals(request.getMethod())
                 && (request.getRequestURI().substring(request.getContextPath().length()).equals("/usuarios") || request.getRequestURI().substring(request.getContextPath().length()).equals("/usuarios/"));
         http.authorizeHttpRequests(auth -> auth
-                .requestMatchers(HttpMethod.POST, "/usuarios", "/usuarios/").permitAll()
+                .requestMatchers(HttpMethod.POST, "/usuarios", "/usuarios/").authenticated()
                 .requestMatchers(HttpMethod.GET, "/health").permitAll()
                 .requestMatchers(HttpMethod.POST,"/auth/login","/auth/login/").permitAll()
                 .requestMatchers("/auth/me","/auth/logout").authenticated()
