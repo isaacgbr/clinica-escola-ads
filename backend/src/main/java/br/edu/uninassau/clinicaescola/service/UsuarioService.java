@@ -2,6 +2,8 @@ package br.edu.uninassau.clinicaescola.service;
 
 import br.edu.uninassau.clinicaescola.dto.UsuarioPublico;
 import br.edu.uninassau.clinicaescola.entity.Usuario;
+import br.edu.uninassau.clinicaescola.entity.Perfil;
+import org.springframework.transaction.annotation.Isolation;
 import br.edu.uninassau.clinicaescola.exception.EmailJaCadastradoException;
 import br.edu.uninassau.clinicaescola.repository.UsuarioRepository;
 import org.hibernate.exception.ConstraintViolationException;
@@ -27,10 +29,25 @@ public class UsuarioService {
     // Valida antes de proteger a senha e mantém a gravação na mesma transação.
     @Transactional
     public UsuarioPublico cadastrar(Object entrada) {
+        return criar(entrada, Perfil.INTERNO);
+    }
+
+    // A transação serializável impede dois provisionamentos simultâneos de primeiro ADMIN.
+    @Transactional(isolation = Isolation.SERIALIZABLE)
+    public void provisionarPrimeiroAdmin(Object entrada) {
+        if (repository.existsByPerfil(Perfil.ADMIN)) {
+            throw new IllegalStateException("Já existe um administrador; provisionamento recusado.");
+        }
+        criar(entrada, Perfil.ADMIN);
+    }
+
+    private UsuarioPublico criar(Object entrada, Perfil perfil) {
         var dados = validador.validar(entrada);
         if (repository.existePorEmail(dados.email())) throw new EmailJaCadastradoException();
-        var usuario = new Usuario(dados.nome(), dados.email(), senhas.encode(dados.senha()),
-                dados.nascimento(), dados.telefone());
+        String hash = senhas.encode(dados.senha());
+        var usuario = perfil == Perfil.ADMIN
+                ? Usuario.primeiroAdministrador(dados.nome(), dados.email(), hash, dados.nascimento(), dados.telefone())
+                : new Usuario(dados.nome(), dados.email(), hash, dados.nascimento(), dados.telefone());
         try {
             usuario = repository.saveAndFlush(usuario);
         } catch (DataIntegrityViolationException erro) {

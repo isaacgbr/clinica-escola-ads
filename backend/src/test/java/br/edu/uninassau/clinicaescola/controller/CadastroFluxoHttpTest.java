@@ -2,6 +2,7 @@ package br.edu.uninassau.clinicaescola.controller;
 
 import br.edu.uninassau.clinicaescola.config.*;
 import br.edu.uninassau.clinicaescola.entity.Usuario;
+import br.edu.uninassau.clinicaescola.dto.UsuarioPublico;
 import br.edu.uninassau.clinicaescola.exception.TratamentoErros;
 import br.edu.uninassau.clinicaescola.repository.UsuarioRepository;
 import br.edu.uninassau.clinicaescola.service.UsuarioService;
@@ -34,17 +35,27 @@ class CadastroFluxoHttpTest {
             {"nome":" Maria ","email":" MARIA@EXAMPLE.COM ","senha":"Teste-local-123!",
              "confirmar_senha":"Teste-local-123!","nascimento":"2000-02-29","telefone":"(81) 99999-9999"}
             """;
+    // Simula uma sessão ADMIN válida; cada teste pode substituí-la para conferir a autorização.
+    private org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder cadastro() {
+        return post("/usuarios").cookie(new jakarta.servlet.http.Cookie("clinica_sessao_local", "a".repeat(64)))
+                .header("Origin", "http://localhost:8080").header("X-Requested-With", "XMLHttpRequest");
+    }
+
     @BeforeEach void preparar() {
+        when(authService.autenticar(any())).thenReturn(new br.edu.uninassau.clinicaescola.dto.UsuarioAutenticado(
+                new UsuarioPublico("1", "Administrador"), br.edu.uninassau.clinicaescola.entity.Perfil.ADMIN));
         var clock = Clock.fixed(Instant.ofEpochSecond(TEMPO.addAndGet(901)), ZoneOffset.UTC);
         when(relogio.instant()).thenReturn(clock.instant());
         when(relogio.withZone(any())).thenAnswer(call -> clock.withZone(call.getArgument(0)));
         when(senhas.encode(any())).thenReturn("marcador-hash-nao-publicar");
         when(repository.saveAndFlush(any())).thenAnswer(call -> {
-            Usuario usuario = call.getArgument(0); ReflectionTestUtils.setField(usuario, "id", 7L); return usuario;
+            Usuario usuario = call.getArgument(0);
+            org.junit.jupiter.api.Assertions.assertEquals(br.edu.uninassau.clinicaescola.entity.Perfil.INTERNO, usuario.getPerfil());
+            ReflectionTestUtils.setField(usuario, "id", 7L); return usuario;
         });
     }
     @Test void percorreControllerServiceERepositoryComDtoPublico() throws Exception {
-        mvc.perform(post("/usuarios").contentType("application/json").content(JSON))
+        mvc.perform(cadastro().contentType("application/json").content(JSON))
                 .andExpect(status().isCreated())
                 .andExpect(content().json("{\"usuario\":{\"id\":\"7\",\"nome\":\"Maria\"}}"))
                 .andExpect(jsonPath("$.usuario.senha").doesNotExist())
@@ -54,14 +65,22 @@ class CadastroFluxoHttpTest {
     }
     @Test void validacaoRealRejeitaTiposCamposExtrasNullEArray() throws Exception {
         for (String body : new String[]{"{\"nome\":123}", "{\"perfil\":\"admin\"}", "null", "[]", "{}"}) {
-            mvc.perform(post("/usuarios").contentType("application/json").content(body))
+            mvc.perform(cadastro().contentType("application/json").content(body))
+                    .andExpect(status().isBadRequest()).andExpect(jsonPath("$.erro.codigo").value("DADOS_INVALIDOS"));
+        }
+        verifyNoInteractions(repository, senhas);
+    }
+    @Test void adminNaoPodeEscolherPerfilDaNovaConta() throws Exception {
+        for (String perfil : new String[]{"ADMIN", "INTERNO"}) {
+            String corpo = JSON.strip().replaceFirst("}$", ",\"perfil\":\"" + perfil + "\"}");
+            mvc.perform(cadastro().contentType("application/json").content(corpo))
                     .andExpect(status().isBadRequest()).andExpect(jsonPath("$.erro.codigo").value("DADOS_INVALIDOS"));
         }
         verifyNoInteractions(repository, senhas);
     }
     @Test void duplicidadeRealRetorna409AntesDoHash() throws Exception {
         when(repository.existePorEmail("maria@example.com")).thenReturn(true);
-        mvc.perform(post("/usuarios").contentType("application/json").content(JSON))
+        mvc.perform(cadastro().contentType("application/json").content(JSON))
                 .andExpect(status().isConflict()).andExpect(jsonPath("$.erro.codigo").value("EMAIL_JA_CADASTRADO"));
         verifyNoInteractions(senhas);
     }

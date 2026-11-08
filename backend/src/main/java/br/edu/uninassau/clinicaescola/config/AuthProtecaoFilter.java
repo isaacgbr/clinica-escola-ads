@@ -1,4 +1,8 @@
 package br.edu.uninassau.clinicaescola.config;
+
+import org.springframework.security.access.AccessDeniedException;
+
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import br.edu.uninassau.clinicaescola.service.AuthService;
 import br.edu.uninassau.clinicaescola.exception.AutenticacaoException;
 import jakarta.servlet.*;
@@ -31,8 +35,13 @@ public final class AuthProtecaoFilter extends OncePerRequestFilter {
         this.relogio=relogio;
     }
     @Override protected boolean shouldNotFilter(HttpServletRequest req) {
-        return !req.getRequestURI().substring(req.getContextPath().length()).startsWith("/auth/");
+        String path = req.getRequestURI().substring(req.getContextPath().length());
+        return !path.startsWith("/auth/") && !cadastro(req, path);
     }
+    private boolean cadastro(HttpServletRequest req, String path) {
+        return "POST".equals(req.getMethod()) && (path.equals("/usuarios") || path.equals("/usuarios/"));
+    }
+
     @Override protected void doFilterInternal(HttpServletRequest req,HttpServletResponse res,FilterChain chain)throws IOException,ServletException {
         res.setHeader("Cache-Control","no-store");
         String path=req.getRequestURI().substring(req.getContextPath().length());
@@ -72,12 +81,14 @@ public final class AuthProtecaoFilter extends OncePerRequestFilter {
                     }
                 }
             }
-            if(path.equals("/auth/me")||path.equals("/auth/logout")) {
+            if(path.equals("/auth/me")||path.equals("/auth/logout")||cadastro(req, path)) {
                 String token=cookies.ler(req);
                 if(token==null)throw new AutenticacaoException("NAO_AUTENTICADO","Autenticação necessária.");
                 var usuario=service.autenticar(token);
-                req.setAttribute("usuarioAutenticado",usuario);
-                SecurityContextHolder.getContext().setAuthentication(new UsernamePasswordAuthenticationToken(usuario,null,List.of()));
+                req.setAttribute("usuarioAutenticado",usuario.usuario());
+                // O perfil vem do banco a cada requisição, nunca do cookie ou do corpo JSON.
+                var permissoes = List.of(new SimpleGrantedAuthority("ROLE_" + usuario.perfil().name()));
+                SecurityContextHolder.getContext().setAuthentication(new UsernamePasswordAuthenticationToken(usuario.usuario(),null,permissoes));
             }
             chain.doFilter(req,res);
         }
@@ -87,6 +98,10 @@ public final class AuthProtecaoFilter extends OncePerRequestFilter {
         }
         catch(IllegalArgumentException e) {
             invalido(res);
+        }
+        catch(AccessDeniedException e) {
+            // Deixa o Spring Security produzir o 403 padronizado para perfil sem permissão.
+            throw e;
         }
         catch(RuntimeException e) {
             org.slf4j.LoggerFactory.getLogger(AuthProtecaoFilter.class).error("Falha na autenticacao: {}", e.getClass().getSimpleName());

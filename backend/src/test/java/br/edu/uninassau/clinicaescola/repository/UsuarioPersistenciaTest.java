@@ -36,6 +36,8 @@ class UsuarioPersistenciaTest {
         long id = Long.parseLong(publico.id()); criados.add(id);
         var usuario = repository.findById(id).orElseThrow();
         assertEquals(email, usuario.email());
+        assertEquals(br.edu.uninassau.clinicaescola.entity.Perfil.INTERNO, usuario.getPerfil());
+        assertEquals("INTERNO", jdbc.queryForObject("SELECT perfil FROM public.usuarios WHERE id=?", String.class, id));
         assertEquals("81999999999", usuario.telefone());
         assertTrue(senhas.matches("Teste-local-123!", usuario.senhaHash()));
         assertFalse(usuario.senhaHash().contains("Teste-local-123!"));

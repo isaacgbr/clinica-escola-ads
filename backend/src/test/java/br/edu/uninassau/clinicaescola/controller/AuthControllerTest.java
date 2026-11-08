@@ -41,7 +41,7 @@ class AuthControllerTest {
         .andExpect(content().json("{\"usuario\":{\"id\":\"1\",\"nome\":\"Maria\"}}"));
     }
     @Test void consultaSessaoELogout()throws Exception {
-        when(service.autenticar(any())).thenReturn(new UsuarioPublico("1","Maria"));
+        when(service.autenticar(any())).thenReturn(new UsuarioAutenticado(new UsuarioPublico("1","Maria"),br.edu.uninassau.clinicaescola.entity.Perfil.INTERNO));
         var cookie=new Cookie("clinica_sessao_local","a".repeat(64));
         mvc.perform(get("/auth/me").cookie(cookie)).andExpect(status().isOk());
         mvc.perform(post("/auth/logout").cookie(cookie).header("Origin","http://localhost:8080").header("X-Requested-With","XMLHttpRequest").contentType("application/json").content("{}"))

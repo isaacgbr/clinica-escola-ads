@@ -15,6 +15,7 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 
 @Configuration
 @EnableWebSecurity
+@org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication(type = org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication.Type.SERVLET)
 @org.springframework.context.annotation.Import(SessaoCookie.class)
 // Define quais rotas são públicas e quais exigem sessão válida.
 public class SegurancaConfig {
@@ -27,12 +28,12 @@ public class SegurancaConfig {
         RequestMatcher cadastro = request -> "POST".equals(request.getMethod())
                 && (request.getRequestURI().substring(request.getContextPath().length()).equals("/usuarios") || request.getRequestURI().substring(request.getContextPath().length()).equals("/usuarios/"));
         http.authorizeHttpRequests(auth -> auth
-                .requestMatchers(HttpMethod.POST, "/usuarios", "/usuarios/").permitAll()
+                .requestMatchers(HttpMethod.POST, "/usuarios", "/usuarios/").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.GET, "/health").permitAll()
                 .requestMatchers(HttpMethod.POST,"/auth/login","/auth/login/").permitAll()
                 .requestMatchers("/auth/me","/auth/logout").authenticated()
                 .anyRequest().denyAll());
-        // Cadastro nao usa cookies; autenticacao usa a protecao de origem do filtro proprio.
+        // Cadastro e autenticação validam origem e cabeçalho obrigatório no AuthProtecaoFilter.
         http.csrf(csrf -> csrf.ignoringRequestMatchers(cadastro, request -> request.getRequestURI().startsWith(request.getContextPath()+"/auth/")));
         http.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
         http.requestCache(cache -> cache.disable());
