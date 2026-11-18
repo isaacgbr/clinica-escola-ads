@@ -1,0 +1,214 @@
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Administrativo | Clínica Escola</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="script.js" defer></script>
+</head>
+
+<body>
+
+    <div class="dashboard">
+
+        <!-- MENU LATERAL -->
+        <aside class="sidebar">
+
+            <div class="logo">
+                <div class="logo-icon">U</div>
+                <div>
+                    <h2>CLÍNICA ESCOLA</h2>
+                    <span>UNINASSAU</span>
+                </div>
+            </div>
+
+            <div class="menu-title">MENU PRINCIPAL</div>
+
+            <nav class="menu">
+                <a href="#" class="menu-item active">
+                    <span>▦</span> Visão geral
+                </a>
+
+                <a href="#" class="menu-item">
+                    <span>♙</span> Pacientes
+                </a>
+
+                <a href="#" class="menu-item">
+                    <span>▣</span> Agendamentos
+                </a>
+
+                <a href="#" class="menu-item">
+                    <span>✚</span> Profissionais
+                </a>
+
+                <a href="#" class="menu-item">
+                    <span>▤</span> Serviços
+                </a>
+
+                <a href="#" class="menu-item">
+                    <span>▥</span> Relatórios
+                </a>
+            </nav>
+
+            <div class="menu-title">SISTEMA</div>
+
+            <nav class="menu">
+                <a href="#" class="menu-item">
+                    <span>⚙</span> Configurações
+                </a>
+
+                <a href="#" class="menu-item" id="logout">
+                    <span>↪</span> Sair
+                </a>
+            </nav>
+
+            <div class="sidebar-footer">
+                <strong>UNINASSAU</strong>
+                <span>Portal Administrativo</span>
+            </div>
+
+        </aside>
+
+        <!-- CONTEÚDO PRINCIPAL -->
+        <main class="main-content">
+
+            <header class="topbar">
+                <div>
+                    <span class="breadcrumb">Painel administrativo / Visão geral</span>
+                    <h1>Dashboard</h1>
+                </div>
+
+                <div class="admin-profile">
+                    <div class="notification">♧</div>
+
+                    <div class="profile-avatar">A</div>
+
+                    <div class="profile-info">
+                        <strong>Administrador</strong>
+                        <span>Gestão da Clínica</span>
+                    </div>
+                </div>
+            </header>
+
+            <section class="welcome">
+                <div>
+                    <span>PAINEL DE CONTROLE</span>
+                    <h2>Bem-vindo ao painel administrativo!</h2>
+                    <p>Acompanhe as principais informações da Clínica Escola.</p>
+                </div>
+
+                <div class="welcome-icon">✚</div>
+            </section>
+
+            <!-- INDICADORES -->
+            <section class="stats-grid">
+
+                <article class="stat-card">
+                    <div class="stat-icon blue">♙</div>
+                    <span>Total de pacientes</span>
+                    <h2 id="total-pacientes">0</h2>
+                    <small>Dados demonstrativos</small>
+                </article>
+
+                <article class="stat-card">
+                    <div class="stat-icon yellow">▣</div>
+                    <span>Agendamentos</span>
+                    <h2 id="total-agendamentos">0</h2>
+                    <small>Dados demonstrativos</small>
+                </article>
+
+                <article class="stat-card">
+                    <div class="stat-icon green">✚</div>
+                    <span>Profissionais</span>
+                    <h2 id="total-profissionais">0</h2>
+                    <small>Dados demonstrativos</small>
+                </article>
+
+                <article class="stat-card">
+                    <div class="stat-icon purple">◷</div>
+                    <span>Pendentes</span>
+                    <h2 id="total-pendentes">0</h2>
+                    <small>Dados demonstrativos</small>
+                </article>
+
+            </section>
+
+            <!-- ÁREA INFERIOR -->
+            <section class="content-grid">
+
+                <article class="panel">
+                    <div class="panel-header">
+                        <div>
+                            <h3>Resumo de atendimentos</h3>
+                            <p>Visão demonstrativa da atividade da clínica</p>
+                        </div>
+                        <span class="panel-tag">Mensal</span>
+                    </div>
+
+                    <div class="chart-placeholder">
+                        <div class="chart-bars">
+                            <div style="height: 40%"><span>Jan</span></div>
+                            <div style="height: 65%"><span>Fev</span></div>
+                            <div style="height: 50%"><span>Mar</span></div>
+                            <div style="height: 85%"><span>Abr</span></div>
+                            <div style="height: 70%"><span>Mai</span></div>
+                            <div style="height: 95%"><span>Jun</span></div>
+                        </div>
+                    </div>
+                </article>
+
+                <article class="panel">
+                    <div class="panel-header">
+                        <div>
+                            <h3>Próximos agendamentos</h3>
+                            <p>Exemplos de registros</p>
+                        </div>
+                    </div>
+
+                    <div class="appointment-list">
+
+                        <div class="appointment">
+                            <div class="appointment-date">18</div>
+                            <div class="appointment-info">
+                                <strong>Atendimento clínico</strong>
+                                <span>Paciente demonstrativo</span>
+                            </div>
+                            <span class="status pending">Pendente</span>
+                        </div>
+
+                        <div class="appointment">
+                            <div class="appointment-date">19</div>
+                            <div class="appointment-info">
+                                <strong>Consulta de avaliação</strong>
+                                <span>Paciente demonstrativo</span>
+                            </div>
+                            <span class="status confirmed">Confirmado</span>
+                        </div>
+
+                        <div class="appointment">
+                            <div class="appointment-date">20</div>
+                            <div class="appointment-info">
+                                <strong>Retorno</strong>
+                                <span>Paciente demonstrativo</span>
+                            </div>
+                            <span class="status pending">Pendente</span>
+                        </div>
+
+                    </div>
+                </article>
+
+            </section>
+
+            <footer class="footer">
+                Projeto acadêmico demonstrativo • Clínica Escola UNINASSAU
+                <span id="current-year"></span>
+            </footer>
+
+        </main>
+
+    </div>
+
+</body>
+</html>
